@@ -57,6 +57,7 @@ Router::get('/research/create', function () {
         'abstract',
         'citations',
         'authors',
+        'keywords',
     ]);
 
     echo Research::create(
@@ -65,6 +66,7 @@ Router::get('/research/create', function () {
         $data['abstract'],
         $data['citations'],
         $data['authors'],
+        $data['keywords'],
     );
 });
 
@@ -72,6 +74,31 @@ Router::get('/research/read', function(){
     $id = request()->get('id');
 
     echo Research::read($id);
+});
+
+
+Router::get('/research/searchByTitle', function(){
+    $query = request()->get('query');
+
+    echo Research::searchByTitle($query);
+});
+
+Router::get('/research/searchByAuthor', function(){
+    $query = request()->get('query');
+
+    echo Research::searchByAuthor($query);
+});
+
+Router::get('/research/searchByYear', function(){
+    $query = request()->get('query');
+
+    echo Research::searchByYear($query);
+});
+
+Router::get('/research/searchByKeyword', function(){
+    $query = request()->get('query');
+
+    echo Research::searchByKeyword($query);
 });
 
 
