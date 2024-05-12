@@ -14,11 +14,12 @@ class Student
     public static function create($firstName, $lastName, $yearLevel, $middleName = null)
     {
         $client = self::getClient();
-        $result = $client->run('CREATE (s:Student {firstName: $firstName, middleName: $middleName, lastName: $lastName, yearLevel: $yearLevel}) RETURN s', [
+        $result = $client->run('CREATE (s:Student {firstName: $firstName, middleName: $middleName, lastName: $lastName, yearLevel: $yearLevel, is_approve: $is_approve}) RETURN s', [
             'firstName' => $firstName,
             'middleName' => $middleName,
             'lastName' => $lastName,
-            'yearLevel' => $yearLevel
+            'yearLevel' => $yearLevel,
+            'is_approve' => false
         ]);
 
         // Return true if a node was created

@@ -268,12 +268,6 @@ class Research
         ]);
     }
 
-
-
-
-
-
-
     public static function all()
     {
         $client = self::getClient();

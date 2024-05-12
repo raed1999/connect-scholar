@@ -60,12 +60,19 @@ class Auth
         ]);
     }
 
-    public static function login($username, $password)
+    public static function login($username, $password, $userType)
     {
         $client = self::getClient();
 
-        // Find the student node by username
-        $results = $client->run('MATCH (s:Student {username: $username}) RETURN count(s) AS count, s.password AS password', ['username' => $username]);
+        // Determine the label based on user type
+        $label = match ($userType) {
+            'admin' => 'Admin',
+            'clerk' => 'Clerk',
+            default => 'Student', // Default to Student if user type is not specified or unrecognized
+        };
+
+        // Find the user node by username and label
+        $results = $client->run("MATCH (u:$label {username: \$username}) RETURN count(u) AS count, u.password AS password", ['username' => $username]);
 
         if ($results->count() <= 0) {
             // No records found, user doesn't exist
@@ -73,7 +80,6 @@ class Auth
             return json_encode([
                 "status" => "error",
                 "message" => "User doesn't exist",
-                "data" => [$username, $password],
             ]);
         }
 
@@ -81,7 +87,7 @@ class Auth
         $storedPassword = $record->get('password');
 
         if (!password_verify($password, $storedPassword)) {
-
+            // Incorrect password
             header('Content-Type: application/json');
             return json_encode([
                 "status" => "error",
@@ -89,13 +95,18 @@ class Auth
             ]);
         }
 
-        if (password_verify($password, $storedPassword)) {
+        // Start a new session
+        session_start();
 
-            header('Content-Type: application/json');
-            return json_encode([
-                "status" => "success",
-                "message" => "Logged in successfully!",
-            ]);
-        }
+        // Store username and user type in session variables
+        $_SESSION['username'] = $username;
+        $_SESSION['userType'] = $userType;
+
+        // Successful login
+        header('Content-Type: application/json');
+        return json_encode([
+            "status" => "success",
+            "message" => "Logged in successfully!",
+        ]);
     }
 }

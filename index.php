@@ -1,6 +1,8 @@
 <?php
 require __DIR__ . "/vendor/autoload.php";
 require_once 'Research.php';
+require_once 'Admin.php';
+require_once 'Clerk.php';
 require_once 'Student.php';
 require_once 'Auth.php';
 
@@ -35,7 +37,9 @@ Router::get('/register', function () {
 Router::get('/login', function () {
     $username = request()->get('username');
     $password = request()->get('password');
-    echo Auth::login($username, $password);
+    $userType = request()->get('userType');
+
+    echo Auth::login($username, $password, $userType);
 });
 
 
@@ -70,64 +74,62 @@ Router::get('/research/create', function () {
     );
 });
 
-Router::get('/research/read', function(){
+Router::get('/research/read', function () {
     $id = request()->get('id');
 
     echo Research::read($id);
 });
 
 
-Router::get('/research/searchByTitle', function(){
+Router::get('/research/searchByTitle', function () {
     $query = request()->get('query');
 
     echo Research::searchByTitle($query);
 });
 
-Router::get('/research/searchByAuthor', function(){
+Router::get('/research/searchByAuthor', function () {
     $query = request()->get('query');
 
     echo Research::searchByAuthor($query);
 });
 
-Router::get('/research/searchByYear', function(){
+Router::get('/research/searchByYear', function () {
     $query = request()->get('query');
 
     echo Research::searchByYear($query);
 });
 
-Router::get('/research/searchByKeyword', function(){
+Router::get('/research/searchByKeyword', function () {
     $query = request()->get('query');
 
     echo Research::searchByKeyword($query);
 });
 
+/* Admin */
+Router::get('/admin/create', function () {
+    $username = request()->get('username');
+    $password = request()->get('password');
+
+    echo Admin::create($username, $password);
+});
+
+
+/* Clerk */
+Router::get('/clerk/create', function () {
+    $firstName = request()->get('firstName');
+    $lastName = request()->get('lastName');
+    $username = request()->get('username');
+    $password = request()->get('password');
+
+    echo Clerk::create($firstName, $lastName, $username, $password);
+});
+
+Router::get('/clerk/approveStudentAccount', function () {
+    $username = request()->get('username');
+
+    echo Clerk::approveStudentAccount($username);
+});
+
 
 /* Dispatch */
 Router::run();
-
-
-
-
-/* Student::create("John", "Doe", "2");
-Student::create("James", "Bond", "2"); */
-
-/* Research::create(
-    "The title of defense", 
-    "2023", 
-    "Sample Abstract",
-    [],
-    ["7","23"]
-); */
-
-/* Research::create(
-    "Teaching the code to code.", 
-    "2022", 
-    "Sample Abstract",
-    ["Algorithms and Complexity of things..."],
-    [7,23]
-);
- */
-
- /* Authentication */
-/*  Auth::register('sample@gmail.com','password123','Ralfh Edwin', 'Panti', 2); */
-/*  Auth::login('sample@gmail.com','password123'); */
