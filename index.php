@@ -54,7 +54,7 @@ Router::get('/research/all', function () {
     echo Research::all();
 });
 
-Router::get('popularResearch', function(){
+Router::get('popularResearch', function () {
     echo Research::popularResearch();
 });
 
@@ -131,6 +131,20 @@ Router::get('/clerk/approveStudentAccount', function () {
 
     echo Clerk::approveStudentAccount($username);
 });
+
+Router::get('/clerk/approveResearch', function () {
+    $title = request()->get('title');
+
+    echo Clerk::approveResearch($title);
+});
+
+Router::get('/clerk/disapproveResearch', function () {
+    $title = request()->get('title');
+
+    echo Clerk::disapproveResearch($title);
+});
+
+
 
 
 /* Dispatch */

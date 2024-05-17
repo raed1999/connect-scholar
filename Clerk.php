@@ -77,4 +77,48 @@ class Clerk
             ]);
         }
     }
+
+    public static function approveResearch($title)
+    {
+        $client = self::getClient();
+
+        // Update the research's approval status to true
+        $result = $client->run('MATCH (r:Research {title: $title}) SET r.approved = true RETURN r', ['title' => $title]);
+
+        // Return response based on the result
+        header('Content-Type: application/json');
+        if ($result->count() > 0) {
+            return json_encode([
+                "status" => "success",
+                "message" => "Research approved successfully!",
+            ]);
+        } else {
+            return json_encode([
+                "status" => "error",
+                "message" => "Research approval failed!",
+            ]);
+        }
+    }
+
+    public static function disapproveResearch($title)
+    {
+        $client = self::getClient();
+
+        // Update the research's approval status to false
+        $result = $client->run('MATCH (r:Research {title: $title}) SET r.approved = false RETURN r', ['title' => $title]);
+
+        // Return response based on the result
+        header('Content-Type: application/json');
+        if ($result->count() > 0) {
+            return json_encode([
+                "status" => "success",
+                "message" => "Research disapproved successfully!",
+            ]);
+        } else {
+            return json_encode([
+                "status" => "error",
+                "message" => "Research disapproval failed!",
+            ]);
+        }
+    }
 }

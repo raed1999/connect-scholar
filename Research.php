@@ -20,7 +20,8 @@ class Research
         RETURN r, CASE WHEN r.year IS NULL THEN false ELSE true END as isNew', [
             'title' => $title,
             'year' => $year,
-            'abstract' => $abstract
+            'abstract' => $abstract,
+            'approved' => false,
         ]);
 
         // Check if a new node was created
@@ -313,7 +314,6 @@ class Research
         // Then, delete the Research node
         $result = $client->run('MATCH (r:Research {title: $title}) DELETE r', ['title' => $title]);
     }
-
 
     public static function cite($sourceTitle, $targetTitle)
     {
