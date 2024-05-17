@@ -371,4 +371,78 @@ class Research
             "message" => "Keyword added to research successfully",
         ]);
     }
+
+    public static function recommendByKeywords($title)
+    {
+        $client = self::getClient();
+
+        $result = $client->run(
+            'MATCH (r:Research {title: $title})-[:KEYWORD_OF]->(k:Keyword)<-[:KEYWORD_OF]-(rec:Research)
+            WHERE r <> rec
+            RETURN rec.title AS recommendedTitle, collect(k.name) AS sharedKeywords, count(k) AS keywordCount
+            ORDER BY keywordCount DESC
+            LIMIT 5',
+            ['title' => $title]
+        );
+
+        // Extract the results
+        $recommendations = [];
+        foreach ($result as $record) {
+            $recommendations[] = [
+                'title' => $record->get('recommendedTitle'),
+                'sharedKeywords' => $record->get('sharedKeywords')
+            ];
+        }
+
+        header('Content-Type: application/json');
+        if (empty($recommendations)) {
+            return json_encode([
+                "status" => "error",
+                "message" => "No recommendations found",
+                "recommendations" => []
+            ]);
+        }
+
+        return json_encode([
+            "status" => "success",
+            "message" => "Recommendations found successfully",
+            "recommendations" => $recommendations
+        ]);
+    }
+
+    public static function popularResearch()
+    {
+        $client = self::getClient();
+
+        $result = $client->run(
+            'MATCH (r:Research)-[:KEYWORD_OF]->(k:Keyword)
+        RETURN k.name AS keyword, count(r) AS occurrence
+        ORDER BY occurrence DESC
+        LIMIT 5'
+        );
+
+        // Extract the results
+        $themes = [];
+        foreach ($result as $record) {
+            $themes[] = [
+                'keyword' => $record->get('keyword'),
+                'occurrence' => $record->get('occurrence')
+            ];
+        }
+
+        header('Content-Type: application/json');
+        if (empty($themes)) {
+            return json_encode([
+                "status" => "error",
+                "message" => "No popular themes found",
+                "themes" => []
+            ]);
+        }
+
+        return json_encode([
+            "status" => "success",
+            "message" => "Popular themes found successfully",
+            "themes" => $themes
+        ]);
+    }
 }

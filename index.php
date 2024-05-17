@@ -54,6 +54,10 @@ Router::get('/research/all', function () {
     echo Research::all();
 });
 
+Router::get('popularResearch', function(){
+    echo Research::popularResearch();
+});
+
 Router::get('/research/create', function () {
     $data = request()->get([
         'title',
@@ -79,7 +83,6 @@ Router::get('/research/read', function () {
 
     echo Research::read($id);
 });
-
 
 Router::get('/research/searchByTitle', function () {
     $query = request()->get('query');
@@ -112,7 +115,6 @@ Router::get('/admin/create', function () {
 
     echo Admin::create($username, $password);
 });
-
 
 /* Clerk */
 Router::get('/clerk/create', function () {
