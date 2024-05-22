@@ -3,7 +3,8 @@
         "laudis/neo4j-php-client": "^3.0",
         "miladrahimi/phprouter": "^5.1",
         "leafs/router": "^0.2.3",
-        "leafs/http": "^2.3"
+        "leafs/http": "^2.3",
+        "fruitcake/php-cors": "^1.3"
     },
     "config": {
         "allow-plugins": {

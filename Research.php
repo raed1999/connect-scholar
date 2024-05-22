@@ -70,6 +70,63 @@ class Research
         ]);
     }
 
+    public static function getResearch(int $userid)
+    {
+        header('Content-Type: application/json');
+
+        $client = self::getClient();
+        $results = $client->run('
+            MATCH (a:Student)-[:AUTHOR_OF]->(r:Research)
+            WHERE ID(a) = $id
+            RETURN r, collect(a) AS authors', ['id' => $userid]);
+
+        // Initialize an array to hold all research data
+        $researchList = [];
+
+        // Loop through each record to get research and author data
+        foreach ($results as $record) {
+            $research = $record->get('r');
+            $authors = $record->get('authors');
+
+            // Extract data from the research node
+            $researchProperties = $research->getProperties();
+            $researchData = [
+                "id" => $research->getId(), // Correctly get the node ID
+                "image-url" => "", // This can be filled in later as needed
+                "title" => $researchProperties['title'] ?? '',
+                "authors" => [],
+                "date-published" => $researchProperties['date_published'] ?? '',
+                "rates" => $researchProperties['rates'] ?? 0,
+                "likes" => $researchProperties['likes'] ?? 0,
+                "views" => $researchProperties['views'] ?? 0,
+                "status" => $researchProperties['status'] ?? 'pending'
+            ];
+
+            // Extract data from the author nodes
+            foreach ($authors as $author) {
+                $authorProperties = $author->getProperties();
+                $researchData['authors'][] = [
+                    "user-id" => $author->getId(),
+                    "name" => $authorProperties['firstName']  . ' ' . $authorProperties['lastName'],
+                ];
+            }
+
+            // Add the research data to the research list
+            $researchList[] = $researchData;
+        }
+
+        // Return the response as a JSON object
+        return json_encode([
+            "is-success" => true,
+            "message" => null,
+            "user-papers" => $researchList
+        ]);
+    }
+
+
+
+
+
     public static function searchByTitle($query)
     {
         $client = self::getClient();

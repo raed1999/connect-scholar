@@ -6,8 +6,11 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
+    'a4a119a56e50fbb293281d9a48007e0e' => $vendorDir . '/symfony/polyfill-php80/bootstrap.php',
     '9c67151ae59aff4788964ce8eb2a0f43' => $vendorDir . '/clue/stream-filter/src/functions_include.php',
     'f7a40c1f1f5eb11aee5f7554cb0c8ea7' => $vendorDir . '/leafs/form/src/functions.php',
+    '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => $vendorDir . '/symfony/polyfill-mbstring/bootstrap.php',
+    '662a729f963d39afe703c9d9b7ab4a8c' => $vendorDir . '/symfony/polyfill-php83/bootstrap.php',
     '07d7f1a47144818725fd8d91a907ac57' => $vendorDir . '/laminas/laminas-diactoros/src/functions/create_uploaded_file.php',
     'da94ac5d3ca7d2dbab84ce561ce72bfd' => $vendorDir . '/laminas/laminas-diactoros/src/functions/marshal_headers_from_sapi.php',
     '3d97c8dcdfba8cb85d3b34f116bb248b' => $vendorDir . '/laminas/laminas-diactoros/src/functions/marshal_method_from_sapi.php',
@@ -26,5 +29,4 @@ return array(
     '751a5a3f463e4be759be31748b61737c' => $vendorDir . '/laminas/laminas-diactoros/src/functions/parse_cookie_header.legacy.php',
     'cfb7c780793bfa1138356bbe97dc66da' => $vendorDir . '/leafs/http/src/functions.php',
     '8cff32064859f4559445b89279f3199c' => $vendorDir . '/php-http/message/src/filters.php',
-    'a4a119a56e50fbb293281d9a48007e0e' => $vendorDir . '/symfony/polyfill-php80/bootstrap.php',
 );

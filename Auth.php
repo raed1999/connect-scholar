@@ -35,6 +35,7 @@ class Auth
 
         // If student node creation failed, return false
         if (!$created) {
+
             header('Content-Type: application/json');
             return json_encode([
                 "status" => "error",
@@ -49,7 +50,12 @@ class Auth
         $client->run(
             'MATCH (s:Student {firstName: $firstName, lastName: $lastName}) 
                       SET s.username = $username, s.password = $hashedPassword',
-            ['username' => $username, 'hashedPassword' => $hashedPassword, 'firstName' => $firstName, 'lastName' => $lastName]
+            [
+                'username' => $username,
+                'hashedPassword' => $hashedPassword,
+                'firstName' => $firstName,
+                'lastName' => $lastName
+            ]
         );
 
         // Registration successful
@@ -72,7 +78,16 @@ class Auth
         };
 
         // Find the user node by username and label
-        $results = $client->run("MATCH (u:$label {username: \$username}) RETURN count(u) AS count, u.password AS password", ['username' => $username]);
+        $results = $client->run(
+            "MATCH (u:$label {username: \$username}) 
+            RETURN 
+                count(u) AS count,
+                u.password AS password,
+                u.firstName AS firstName,
+                u.lastName AS lastName,
+                ID(u) as id",
+            ['username' => $username]
+        );
 
         if ($results->count() <= 0) {
             // No records found, user doesn't exist
@@ -90,8 +105,9 @@ class Auth
             // Incorrect password
             header('Content-Type: application/json');
             return json_encode([
-                "status" => "error",
-                "message" => "Incorrect password",
+                "is-success" => false,
+                "message" => "Login failed",
+                "user-profile" => null
             ]);
         }
 
@@ -105,8 +121,16 @@ class Auth
         // Successful login
         header('Content-Type: application/json');
         return json_encode([
-            "status" => "success",
+            "is-success" => true,
             "message" => "Logged in successfully!",
-        ]);
+            "user-profile" => [
+                'id' => $record->get('id'),
+              /*   'id-number' =>  ($record->get('id_number') !== null ? $record->get('id_number') : null), */
+                'username' => $username,
+                'first-name' =>  $record->get('firstName') ?? null,
+                'last-name' =>  $record->get('lastName') ?? null,
+                'user-type' => strtolower($label),
+                ]
+            ]);
     }
 }

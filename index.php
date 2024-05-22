@@ -1,4 +1,8 @@
 <?php
+header('Access-Control-Allow-Origin: http://localhost:5173'); // Replace with your frontend origin
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS'); // Adjust allowed methods based on your API
+header('Access-Control-Allow-Headers: Content-Type, Authorization'); // Adjust allowed headers if needed
+
 require __DIR__ . "/vendor/autoload.php";
 require_once 'Research.php';
 require_once 'Admin.php';
@@ -15,26 +19,26 @@ $response = new Leaf\Http\Response;
 
 /* Auth */
 
-Router::get('/register', function () {
+Router::post('/register', function () {
     $data = request()->get([
         'username',
         'password',
-        'firstName',
-        'lastName',
-        'yearLevel',
-        'middleName',
+        'firstname',
+        'lastname',
+        'yearlevel',
+        'middlename',
     ]);
     echo Auth::register(
         $data['username'],
         $data['password'],
-        $data['firstName'],
-        $data['lastName'],
-        $data['yearLevel'],
-        $data['middleName'],
+        $data['firstname'],
+        $data['lastname'],
+        $data['yearlevel'],
+        $data['middlename'],
     );
 });
 
-Router::get('/login', function () {
+Router::post('/login', function () {
     $username = request()->get('username');
     $password = request()->get('password');
     $userType = request()->get('userType');
@@ -46,7 +50,6 @@ Router::get('/login', function () {
 Router::get('/logout', function () {
     echo 'Logout';
 });
-
 
 /* Research */
 
@@ -82,6 +85,12 @@ Router::get('/research/read', function () {
     $id = request()->get('id');
 
     echo Research::read($id);
+});
+
+Router::post('/research/getResearch', function () {
+    $userid = request()->get('userid');
+
+    echo Research::getResearch($userid);
 });
 
 Router::get('/research/searchByTitle', function () {
