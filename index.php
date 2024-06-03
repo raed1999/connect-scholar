@@ -41,7 +41,7 @@ Router::post('/register', function () {
 Router::post('/login', function () {
     $username = request()->get('username');
     $password = request()->get('password');
-    $userType = request()->get('userType');
+    $userType = request()->get('usertype');
 
     echo Auth::login($username, $password, $userType);
 });
@@ -61,21 +61,23 @@ Router::get('popularResearch', function () {
     echo Research::popularResearch();
 });
 
-Router::get('/research/create', function () {
+Router::post('/research/create', function () {
     $data = request()->get([
+        'id',
         'title',
         'year',
         'abstract',
-        'citations',
+        /* 'citations', */
         'authors',
         'keywords',
     ]);
 
     echo Research::create(
+        $data['id'],
         $data['title'],
-        $data['year'],
+        2024,
         $data['abstract'],
-        $data['citations'],
+        /* $data['citations'], */
         $data['authors'],
         $data['keywords'],
     );
@@ -141,10 +143,11 @@ Router::get('/clerk/approveStudentAccount', function () {
     echo Clerk::approveStudentAccount($username);
 });
 
-Router::get('/clerk/approveResearch', function () {
-    $title = request()->get('title');
+Router::post('/clerk/approveResearch', function () {
+    $paperId = request()->get('paperId');
+    $status = request()->get('status');
 
-    echo Clerk::approveResearch($title);
+    echo Clerk::approveResearch($paperId, $status);
 });
 
 Router::get('/clerk/disapproveResearch', function () {

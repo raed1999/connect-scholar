@@ -11,50 +11,113 @@ class Research
         return Client::getClient();
     }
 
-    public static function create($title, $year, $abstract, $citations = [], $authors = [],  $keywords = [])
+    public static function create($userid, $title, $year, $abstract, $authors, $keywords)
     {
+        // Process the authors and keywords from comma-separated strings to arrays
+        $authors = isset($authors) ? explode(',', $authors) : [];
+        $keywords = isset($keywords) ? explode(',', $keywords) : [];
+
         $client = self::getClient();
-        // Use MERGE to create a new node only if it doesn't already exist
-        $result = $client->run('MERGE (r:Research {title: $title}) 
-        ON CREATE SET r.year = $year, r.abstract = $abstract 
-        RETURN r, CASE WHEN r.year IS NULL THEN false ELSE true END as isNew', [
-            'title' => $title,
-            'year' => $year,
-            'abstract' => $abstract,
-            'approved' => false,
-        ]);
 
-        // Check if a new node was created
-        $record = $result->first();
-        $created = $record->get('isNew');
+        try {
+            // Use MERGE to create a new node only if it doesn't already exist
+            $result = $client->run('
+                MERGE (r:Research {title: $title}) 
+                ON CREATE SET r.year = $year, r.abstract = $abstract, r.userid = $userid, r.status = "pending"
+                RETURN r, CASE WHEN r.year IS NULL THEN false ELSE true END as isNew
+            ', [
+                'title' => $title,
+                'year' => $year,
+                'abstract' => $abstract,
+                'userid' => $userid,
+            ]);
 
-        // If there are keywords, add them
-        if ($created && !empty($keywords)) {
-            foreach ($keywords as $keyword) {
-                self::addKeyword($title, $keyword);
+            // Check if a new node was created
+            $record = $result->first();
+            $created = $record->get('isNew');
+
+            // If there are keywords, add them
+            if ($created && !empty($keywords)) {
+                foreach ($keywords as $keyword) {
+                    self::addKeyword($title, trim($keyword));
+                }
             }
-        }
 
-        // If there are citations, create citation relationships
-        if ($created && !empty($citations)) {
-            foreach ($citations as $citation) {
-                self::cite($title, (int)$citation);
+            // If there are authors, assign them to the research
+            if ($created && !empty($authors)) {
+                foreach ($authors as $author) {
+                    self::assignAuthors($title, trim($author));
+                }
             }
-        }
 
-        // If there are authors, assign them to the research
-        if ($created && !empty($authors)) {
-            foreach ($authors as $author) {
-                self::assignAuthors($title, (int)$author);
-            }
+            // Retrieve the newly inserted data with its relationships
+            $result = $client->run('
+                MATCH (r:Research {title: $title})
+                OPTIONAL MATCH (r)<-[:AUTHOR_OF]-(a:Student)
+                OPTIONAL MATCH (r)<-[:KEYWORD_OF]-(k:Keyword)
+                RETURN r, 
+                       COLLECT(DISTINCT a {id: ID(a), name: a.firstName + " " + a.lastName}) AS authors, 
+                       COLLECT(DISTINCT k {id: ID(k), name: k.name}) AS keywords
+            ', [
+                'title' => $title,
+            ]);
+
+            // Get the data
+            $record = $result->first();
+            $research = $record->get('r');
+            $authorsData = $record->get('authors')->toArray();
+            /*   var_dump($authorsData); */
+            $keywordsData = $record->get('keywords')->toArray();
+
+            // Get properties of the research node
+            $researchProperties = $research->getProperties();
+
+            // Format the response
+            $response = [
+                "is-success" => true,
+                "message" => null,
+                "user-paper" => [
+                    "id" => $research->getId(), // Correctly get the ID
+                    "image-url" => "",
+                    "title" => $researchProperties['title'] ?? '',
+                    "authors" => array_map(function ($author) {
+                        return [
+                            "user-id" => $author['id'],
+                            "name" => $author['name']
+                        ];
+                    }, $authorsData),
+                    "date-published" => date('Y-m-d'),
+                    "rates" => 0,
+                    "likes" => 0,
+                    "views" => 0,
+                    "status" => "pending",
+                    "keywords" => array_map(function ($keyword, $index) {
+                        return [
+                            "id" => $index + 1,
+                            "name" => $keyword['name']
+                        ];
+                    }, $keywordsData, array_keys($keywordsData)),
+                    "abstract" => $researchProperties['abstract'] ?? ''
+                ]
+            ];
+        } catch (\Exception $e) {
+            // Handle any errors that occurred during the process
+            $response = [
+                "is-success" => false,
+                "message" => $e->getMessage(),
+                "user-paper" => null
+            ];
         }
 
         header('Content-Type: application/json');
-        return json_encode([
-            "status" => "success",
-            "message" => "Research added successfully",
-        ]);
+        return json_encode($response);
     }
+
+
+
+
+
+
 
 
     public static function read(int $id)
@@ -99,7 +162,9 @@ class Research
                 "rates" => $researchProperties['rates'] ?? 0,
                 "likes" => $researchProperties['likes'] ?? 0,
                 "views" => $researchProperties['views'] ?? 0,
-                "status" => $researchProperties['status'] ?? 'pending'
+                "status" => $researchProperties['status'] ?? 'pending',
+                "abstract" => $researchProperties['abstract'] ?? '',
+                "keywords" => []
             ];
 
             // Extract data from the author nodes
@@ -108,6 +173,21 @@ class Research
                 $researchData['authors'][] = [
                     "user-id" => $author->getId(),
                     "name" => $authorProperties['firstName']  . ' ' . $authorProperties['lastName'],
+                ];
+            }
+
+            // Fetch keywords associated with the research
+            $keywordResults = $client->run('
+                MATCH (r:Research)<-[:KEYWORD_OF]-(k:Keyword)
+                WHERE ID(r) = $researchId
+                RETURN k', ['researchId' => $research->getId()]);
+
+            foreach ($keywordResults as $keywordRecord) {
+                $keyword = $keywordRecord->get('k');
+                $keywordProperties = $keyword->getProperties();
+                $researchData['keywords'][] = [
+                    "id" => $keyword->getId(),
+                    "name" => $keywordProperties['name']
                 ];
             }
 
@@ -122,6 +202,7 @@ class Research
             "user-papers" => $researchList
         ]);
     }
+
 
 
 
@@ -328,14 +409,70 @@ class Research
 
     public static function all()
     {
-        $client = self::getClient();
-        $results = $client->run('MATCH (r:Research) RETURN r');
-
         header('Content-Type: application/json');
+
+        $client = self::getClient();
+        $results = $client->run('
+            MATCH (a:Student)-[:AUTHOR_OF]->(r:Research)
+            RETURN r, collect(a) AS authors');
+
+        // Initialize an array to hold all research data
+        $researchList = [];
+
+        // Loop through each record to get research and author data
+        foreach ($results as $record) {
+            $research = $record->get('r');
+            $authors = $record->get('authors');
+
+            // Extract data from the research node
+            $researchProperties = $research->getProperties();
+            $researchData = [
+                "id" => $research->getId(), // Correctly get the node ID
+                "image-url" => "", // This can be filled in later as needed
+                "title" => $researchProperties['title'] ?? '',
+                "authors" => [],
+                "date-published" => $researchProperties['date_published'] ?? '',
+                "rates" => $researchProperties['rates'] ?? 0,
+                "likes" => $researchProperties['likes'] ?? 0,
+                "views" => $researchProperties['views'] ?? 0,
+                "status" => $researchProperties['status'] ?? 'pending',
+                "abstract" => $researchProperties['abstract'] ?? '',
+                "keywords" => []
+            ];
+
+            // Extract data from the author nodes
+            foreach ($authors as $author) {
+                $authorProperties = $author->getProperties();
+                $researchData['authors'][] = [
+                    "user-id" => $author->getId(),
+                    "name" => $authorProperties['firstName']  . ' ' . $authorProperties['lastName'],
+                ];
+            }
+
+            // Fetch keywords associated with the research
+            $keywordResults = $client->run('
+                MATCH (r:Research)<-[:KEYWORD_OF]-(k:Keyword)
+                WHERE ID(r) = $researchId
+                RETURN k', ['researchId' => $research->getId()]);
+
+            foreach ($keywordResults as $keywordRecord) {
+                $keyword = $keywordRecord->get('k');
+                $keywordProperties = $keyword->getProperties();
+                $researchData['keywords'][] = [
+                    "id" => $keyword->getId(),
+                    "name" => $keywordProperties['name']
+                ];
+            }
+
+            // Add the research data to the research list
+            $researchList[] = $researchData;
+        }
+
+        // Return the response as a JSON object
         return json_encode([
-            "status" => "success",
-            "message" => "Retrieve successfully",
-            "researches" => $results
+            "is-success" => true,
+            "message" => null,
+            "user-papers" => $researchList
         ]);
     }
 
@@ -384,16 +521,33 @@ class Research
         );
     }
 
-    public static function assignAuthors($researchTitle, $authorInternalId)
+    public static function assignAuthors($researchTitle, $authorFullName)
     {
-        $client = self::getClient(); // Make sure getClient is a static method
+        // Split the full name into an array of names
+        $nameParts = explode(' ', $authorFullName);
+
+        // The last element in the array is the last name
+        $lastName = array_pop($nameParts);
+
+        // The rest of the elements are the first names
+        $firstName = implode(' ', $nameParts);
+
+        // Ensure the client is instantiated correctly
+        $client = self::getClient();
+
+        // Modify the query to match based on the first and last name
         $result = $client->run(
-            'MATCH (r:Research {title: $researchTitle}), (s:Student)
-                WHERE ID(s) = $authorInternalId
-                CREATE (s)-[:AUTHOR_OF]->(r)',
-            ['researchTitle' => $researchTitle, 'authorInternalId' => $authorInternalId]
+            'MATCH (r:Research {title: $researchTitle}), (s:Student {firstName: $firstName, lastName: $lastName})
+         CREATE (s)-[:AUTHOR_OF]->(r)',
+            [
+                'researchTitle' => $researchTitle,
+                'firstName' => $firstName,
+                'lastName' => $lastName
+            ]
         );
     }
+
+
 
     public static function addKeyword($researchTitle, $keyword)
     {
@@ -418,7 +572,7 @@ class Research
         // Create the relationship
         $client->run(
             'MATCH (r:Research {title: $researchTitle}), (k:Keyword {name: $keyword})
-                MERGE (r)-[:KEYWORD_OF]->(k)',
+                MERGE (r)<-[:KEYWORD_OF]-(k)',
             ['researchTitle' => $researchTitle, 'keyword' => $keyword]
         );
 

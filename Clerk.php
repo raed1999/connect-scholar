@@ -78,24 +78,33 @@ class Clerk
         }
     }
 
-    public static function approveResearch($title)
+    public static function approveResearch(int $paperId, $status)
     {
         $client = self::getClient();
 
+        echo $paperId;
+        echo $status;
+
         // Update the research's approval status to true
-        $result = $client->run('MATCH (r:Research {title: $title}) SET r.approved = true RETURN r', ['title' => $title]);
+        $result = $client->run(
+            'MATCH (r:Research) WHERE id(r) = $paperId SET r.status = $status RETURN r',
+            [
+                'paperId' => $paperId,
+                'status' => $status,
+            ]
+        );        
 
         // Return response based on the result
         header('Content-Type: application/json');
         if ($result->count() > 0) {
             return json_encode([
-                "status" => "success",
-                "message" => "Research approved successfully!",
+                "is-success" => true,
+                "message" => null //message is expected to be null on success.
             ]);
         } else {
             return json_encode([
-                "status" => "error",
-                "message" => "Research approval failed!",
+                "is-success" => false,
+                "message" => "Unable to update status"
             ]);
         }
     }

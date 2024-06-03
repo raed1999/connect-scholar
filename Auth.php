@@ -73,7 +73,7 @@ class Auth
         // Determine the label based on user type
         $label = match ($userType) {
             'admin' => 'Admin',
-            'clerk' => 'Clerk',
+            'faculty' => 'Faculty',
             default => 'Student', // Default to Student if user type is not specified or unrecognized
         };
 
@@ -101,7 +101,7 @@ class Auth
         $record = $results->first();
         $storedPassword = $record->get('password');
 
-        if (!password_verify($password, $storedPassword)) {
+        if (!password_verify($password, strval($storedPassword))) {
             // Incorrect password
             header('Content-Type: application/json');
             return json_encode([
@@ -115,8 +115,8 @@ class Auth
         session_start();
 
         // Store username and user type in session variables
-        $_SESSION['username'] = $username;
-        $_SESSION['userType'] = $userType;
+        /* $_SESSION['username'] = $username;
+        $_SESSION['userType'] = $userType; */
 
         // Successful login
         header('Content-Type: application/json');
