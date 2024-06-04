@@ -83,6 +83,16 @@ Router::post('/research/create', function () {
     );
 });
 
+Router::post('/research/update', function () {
+    $paperid  = request()->get('paperid');
+    $title = request()->get('title');
+    $abstract = request()->get('abstract');
+    $authors  = request()->get('authors');
+    $keywords  = request()->get('keywords');
+
+    echo Research::update($paperid, $title, $abstract, $authors, $keywords);
+});
+
 Router::get('/research/read', function () {
     $id = request()->get('id');
 
@@ -93,6 +103,12 @@ Router::post('/research/getResearch', function () {
     $userid = request()->get('userid');
 
     echo Research::getResearch($userid);
+});
+
+Router::post('/research/search', function () {
+    $query = request()->get('query');
+
+    echo Research::search($query);
 });
 
 Router::get('/research/searchByTitle', function () {
