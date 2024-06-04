@@ -93,6 +93,14 @@ Router::post('/research/update', function () {
     echo Research::update($paperid, $title, $abstract, $authors, $keywords);
 });
 
+
+Router::post('/research/delete', function () {
+    $paperid = request()->get('paperId');
+
+    echo Research::delete($paperid);
+});
+
+
 Router::get('/research/read', function () {
     $id = request()->get('id');
 

@@ -802,14 +802,30 @@ class Research
     }
 
 
-    public static function delete($title)
+    public static function delete(int $paperid)
     {
         $client = self::getClient();
-        // First, delete any relationships connected to the Research node
-        $client->run('MATCH (r:Research {title: $title})-[rel]-() DELETE rel', ['title' => $title]);
-        // Then, delete the Research node
-        $result = $client->run('MATCH (r:Research {title: $title}) DELETE r', ['title' => $title]);
+
+        try {
+            // First, delete any relationships connected to the Research node
+            $client->run('MATCH (r:Research) WHERE ID(r) = $paperid DETACH DELETE r', ['paperid' => $paperid]);
+
+            $response = [
+                "is-success" => true,
+                "message" => null
+            ];
+        } catch (\Exception $e) {
+            // Handle any errors that occurred during the process
+            $response = [
+                "is-success" => false,
+                "message" => $e->getMessage()
+            ];
+        }
+
+        header('Content-Type: application/json');
+        return json_encode($response);
     }
+
 
     public static function cite($sourceTitle, $targetTitle)
     {
